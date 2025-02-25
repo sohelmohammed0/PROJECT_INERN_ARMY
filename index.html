@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CI/CD Pipeline Dashboard</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <header>
+        <h1>CI/CD Pipeline Dashboard</h1>
+    </header>
+
+    <main>
+        <div class="pipeline">
+            <div class="stage" id="code-pushed">
+                <h2>📌 Code Pushed</h2>
+                <div class="status-container">
+                    <p>Status: <span class="status">Waiting...</span></p>
+                </div>
+            </div>
+
+            <div class="stage" id="github-actions">
+                <h2>⚙️ GitHub Actions Triggered</h2>
+                <div class="status-container">
+                    <p>Status: <span class="status">Waiting...</span></p>
+                </div>
+            </div>
+
+            <div class="stage" id="docker-build">
+                <h2>🐳 Docker Image Built</h2>
+                <div class="status-container">
+                    <p>Status: <span class="status">Waiting...</span></p>
+                </div>
+            </div>
+
+            <div class="stage" id="deployment">
+                <h2>🚀 Deployed to AWS</h2>
+                <div class="status-container">
+                    <p>Status: <span class="status">Waiting...</span></p>
+                </div>
+            </div>
+        </div>
+
+        <button id="simulateButton">Simulate Pipeline Run</button>
+    </main>
+
+    <script src="script.js"></script>
+
+</body>
+</html>
