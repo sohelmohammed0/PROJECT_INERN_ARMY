@@ -1,114 +1,99 @@
-# 🚀 Simple CI/CD Pipeline for a Static Website on AWS EC2
+# **Automated CI/CD Pipeline for Deploying a Web Application on AWS using Docker & GitHub Actions**
 
-This project demonstrates how to set up a **CI/CD pipeline** to **automate deployment** of a static website using **Docker** and **AWS EC2**. The pipeline ensures that every code update is automatically pulled, built into a Docker container, and deployed on the EC2 instance.
+## **📌 Project Overview**
+This project demonstrates a fully automated **CI/CD pipeline** using **Git, GitHub Actions, Docker, and AWS**. The pipeline automates the process of building, pushing, and deploying a Docker containerized web application to an AWS EC2 instance whenever changes are pushed to the **main branch** in GitHub.
 
----
-
-## 📌 **Table of Contents**
-- [Introduction](#introduction)
-- [Project Workflow](#project-workflow)
+## **📜 Table of Contents**
+- [Pre-requisites](#pre-requisites)
 - [Technologies Used](#technologies-used)
-- [Prerequisites](#prerequisites)
-- [Step-by-Step Setup](#step-by-step-setup)
-- [Auto-Deployment with GitHub Actions](#auto-deployment-with-github-actions)
-- [Troubleshooting](#troubleshooting)
+- [Project Workflow](#project-workflow)
+- [Setting Up AWS EC2 Instance](#setting-up-aws-ec2-instance)
+- [Configuring GitHub Secrets](#configuring-github-secrets)
+- [Creating the GitHub Actions Workflow](#creating-the-github-actions-workflow)
+- [Dockerfile Configuration](#dockerfile-configuration)
+- [Triggering the CI/CD Pipeline](#triggering-the-ci/cd-pipeline)
+- [Testing the Deployment](#testing-the-deployment)
 - [Conclusion](#conclusion)
 
 ---
 
-## 📌 **Introduction**
-This project provides a fully automated **CI/CD solution** to deploy a **static website** (HTML, CSS, JS) using **Docker** on an **AWS EC2 Ubuntu instance**. The process includes:
-- Setting up **Docker** to containerize the application.
-- Using **GitHub Actions** for continuous integration and deployment.
-- Deploying the website automatically after each code push.
+## **✅ Pre-requisites**
+Before starting, ensure you have the following:
+1. **GitHub Repository** for storing the project files.
+2. **Docker Hub Account** to store and manage container images.
+3. **AWS EC2 Instance** (Ubuntu) for deploying the application.
+4. **Domain or Public IP** to access the deployed web app.
+5. **Basic knowledge of Docker & CI/CD concepts.**
 
 ---
 
-## 📌 **Project Workflow**
-1. **Developer pushes code** → GitHub repository
-2. **GitHub Actions workflow triggers** → SSHs into EC2 and runs the deployment script
-3. **EC2 updates the repository** → Builds a new Docker image
-4. **Docker container restarts** → The new version of the website is live
+## **🛠 Technologies Used**
+- **Git** - Version control system
+- **GitHub** - Code repository hosting and GitHub Actions for CI/CD
+- **Docker** - Containerization of the web application
+- **AWS EC2** - Cloud infrastructure for hosting the app
+- **Nginx** - Web server for serving the static files
+- **GitHub Actions** - Automating build, push, and deployment
+- **SSH & SCP** - Secure connection and file transfers to EC2
 
 ---
 
-## 📌 **Technologies Used**
-- **AWS EC2** (Ubuntu 20.04) - Hosting the website
-- **Docker** - Containerizing the application
-- **GitHub Actions** - Automating the deployment
-- **Nginx** - Serving the static website inside the container
-- **Bash Scripting** - Automating server setup and deployment
+## **🔄 Project Workflow**
+1. **Developer commits & pushes changes** to GitHub.
+2. **GitHub Actions triggers a workflow** to build a new Docker image.
+3. **Docker image is pushed to Docker Hub.**
+4. **GitHub Actions connects to the EC2 instance** using SSH.
+5. **Old container is stopped & removed.**
+6. **New container is pulled from Docker Hub & deployed.**
+7. **Application is accessible via EC2's public IP.**
 
 ---
 
-## 📌 **Prerequisites**
-Before proceeding, ensure you have:
-- An **AWS EC2 instance** running Ubuntu
-- **GitHub repository** with your static website files (`index.html`)
-- **GitHub Actions** configured (optional but recommended)
-- **SSH access** to your EC2 instance
+## **🖥 Setting Up AWS EC2 Instance**
+1. **Launch an EC2 instance** on AWS with **Ubuntu 22.04 LTS**.
+
+![Launch Instance](images/liec2.png "Launch Instance EC2 (ubuntu 22.04)")
+
+2. **Install Docker on EC2:**
+   ```sh
+   sudo apt update
+   sudo apt install -y docker.io
+   sudo systemctl start docker
+   sudo systemctl enable docker
+   ```
+
+![Docker installation](images/dockerinstallversion.png "Docker installation")
+
+
+3. **Allow EC2 to run Docker without sudo:**
+   ```sh
+   sudo usermod -aG docker ubuntu
+   ```
+4. **Open port 80** in AWS Security Group to allow access to the web app.
 
 ---
 
-## 📌 **Step-by-Step Setup**
+## **🔐 Configuring GitHub Secrets**
+To securely store credentials, go to **GitHub Repository > Settings > Secrets** and add the following:
 
-### **Step 1: Connect to Your EC2 Instance**
-```sh
-ssh -i your-key.pem ubuntu@your-ec2-ip
-```
-
-### **Step 2: Install Docker on EC2**
-```sh
-sudo apt update -y
-sudo apt install docker.io -y
-sudo systemctl start docker
-sudo systemctl enable docker
-sudo usermod -aG docker $USER
-newgrp docker
-```
-
-### **Step 3: Clone Your GitHub Repository**
-```sh
-git clone https://github.com/your-username/your-repository.git
-cd your-repository
-```
-
-### **Step 4: Create a `Dockerfile`**
-```dockerfile
-# Use Nginx as the base image
-FROM nginx:latest
-
-# Copy website files to Nginx default directory
-COPY index.html /usr/share/nginx/html/index.html
-COPY css/ /usr/share/nginx/html/css/
-COPY js/ /usr/share/nginx/html/js/
-
-# Expose port 80
-EXPOSE 80
-
-# Start Nginx server
-CMD ["nginx", "-g", "daemon off;"]
-```
-
-### **Step 5: Build & Run the Docker Container**
-```sh
-docker build -t my-static-site .
-docker run -d -p 80:80 --name website-container my-static-site
-```
-
-Your website is now accessible at:  
-**`http://your-ec2-public-ip`**
+| Secret Name            | Description                         |
+|------------------------|-------------------------------------|
+| `DOCKER_USERNAME`      | Your Docker Hub username           |
+| `DOCKER_PASSWORD`      | Your Docker Hub Personal Access Token (PAT) |
+| `AWS_HOST`            | Public IP of your EC2 instance     |
+| `AWS_USERNAME`        | Default user for Ubuntu (usually `ubuntu`) |
+| `AWS_PRIVATE_KEY`     | Your EC2 private key for SSH access |
 
 ---
 
-## 📌 **Auto-Deployment with GitHub Actions**
-To enable automatic deployment on every push, create a **GitHub Actions workflow**:
+![Secrets](images/secrets.png "Secrets")
 
-1. In your GitHub repo, create `.github/workflows/deploy.yml`
-2. Add the following workflow script:
+
+## **📝 Creating the GitHub Actions Workflow**
+Create a `.github/workflows/main.yml` file in your repository and add the following:
 
 ```yaml
-name: Deploy to AWS EC2
+name: CI/CD Pipeline
 
 on:
   push:
@@ -120,59 +105,103 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+      - name: Checkout Repository
+        uses: actions/checkout@v3
 
-      - name: Deploy to EC2
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
-          EC2_HOST: "your-ec2-ip"
-          EC2_USER: "ubuntu"
+      - name: Login to Docker Hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
+      - name: Build and Push Docker Image
         run: |
-          echo "$SSH_PRIVATE_KEY" > private_key && chmod 600 private_key
-          ssh -o StrictHostKeyChecking=no -i private_key $EC2_USER@$EC2_HOST << 'EOF'
-            cd your-repository
-            git pull origin main
-            docker stop website-container || true
-            docker rm website-container || true
-            docker build -t my-static-site .
-            docker run -d -p 80:80 --name website-container my-static-site
-          EOF
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/webapp:latest .
+          docker tag ${{ secrets.DOCKER_USERNAME }}/webapp:v2
+          docker push ${{ secrets.DOCKER_USERNAME }}/webapp:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/webapp:v2
+
+      - name: Deploy to AWS EC2
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.AWS_HOST }}
+          username: ${{ secrets.AWS_USERNAME }}
+          key: ${{ secrets.AWS_PRIVATE_KEY }}
+          script: |
+            docker stop webapp || true
+            docker rm webapp || true
+            docker pull ${{ secrets.DOCKER_USERNAME }}/webapp:latest
+            docker run -d -p 80:80 --name webapp ${{ secrets.DOCKER_USERNAME }}/webapp:latest
+            echo "Deployment successful!"
 ```
 
-3. **Set Up GitHub Secrets**:
-   - Go to **GitHub Repo → Settings → Secrets and Variables → Actions**
-   - Add **`EC2_SSH_KEY`** (Your private key contents)
+---
 
-4. **Commit & Push Changes**  
+## **📦 Dockerfile Configuration**
+Ensure you have a **Dockerfile** in your repository:
+
+```dockerfile
+FROM nginx:latest
+COPY index.html /usr/share/nginx/html/index.html
+```
+
+![Dockerfile](images/dockerimage.png "Dockerfile")
+
+
+This will serve **index.html** as `index.html` via Nginx. (Version 1)
+
+![V1](images/tmonec2.1.png "Version 1")
+
+
+---
+
+
+
+## **🚀 Triggering the CI/CD Pipeline**
+1. Push changes to the `main` branch:
    ```sh
    git add .
-   git commit -m "Added CI/CD workflow"
+   git commit -m "Updated index.html"
    git push origin main
    ```
-
-Now, whenever you push new code to the `main` branch, **GitHub Actions will automatically deploy it to EC2**.
-
----
-
-## 📌 **Troubleshooting**
-| Problem | Solution |
-|---------|----------|
-| **Docker command not found** | Run `sudo apt install docker.io -y` |
-| **Port 80 already in use** | Run `sudo lsof -i :80` to check and stop conflicting services |
-| **GitHub Actions deployment failed** | Check logs in **GitHub Actions → Workflows** |
-| **Website not accessible** | Ensure security group allows HTTP (port 80) |
+2. GitHub Actions will automatically:
+   - Build & tag a new Docker image.
+   - Push the image to Docker Hub.
+   - Deploy the new version to AWS EC2.
 
 ---
 
-## 📌 **Conclusion**
-This project automates **CI/CD deployment** of a static website using:
-✅ **Docker** for containerization  
-✅ **AWS EC2** for hosting  
-✅ **GitHub Actions** for automation  
+![Github actions](images/v2sucessgh.png "Push changes")
 
-🚀 **Now your website is fully automated and updates on every push!** 🎉  
-Let me know if you need any improvements! 😊
 
+## **🛠 Testing the Deployment**
+Once deployment is successful, access your web application by visiting:
+```
+http://<YOUR_EC2_PUBLIC_IP>
+```
+This will serve **index.html** (updated) as `index.html` via Nginx. (Version 2)
+
+![V2](images/v2interface.png "V2")
+
+
+To verify the container is running on EC2:
+```sh
+docker ps
+```
+To check the contents of the deployed app:
+```sh
+docker exec -it webapp sh
+ls /usr/share/nginx/html/
+```
+You should see `index.html` (which contains the content of `index.html`).
+
+---
+
+## **📌 Conclusion**
+This project successfully sets up an automated CI/CD pipeline using **GitHub Actions, Docker, and AWS**. The pipeline ensures that every change pushed to GitHub is automatically built, tested, and deployed to an AWS EC2 instance, providing a seamless DevOps workflow.
+
+✅ **Key Takeaways:**
+- Automated Docker image build and push to **Docker Hub**.
+- Continuous deployment to **AWS EC2** using **GitHub Actions**.
+- **Nginx** used as a web server to serve static files.
+- Secure **SSH-based deployment** with **GitHub Secrets**.
+
+This setup is ideal for deploying **small-to-medium scale web applications** efficiently. 🚀🎉
 
