@@ -1,0 +1,47 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main  # Runs when code is pushed to the main branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Login to Docker Hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      - name: Build and Push Docker Image
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/webapp:latest .
+          docker tag ${{ secrets.DOCKER_USERNAME }}/webapp:latest ${{ secrets.DOCKER_USERNAME }}/webapp:v2
+          docker push ${{ secrets.DOCKER_USERNAME }}/webapp:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/webapp:v2
+
+      - name: Deploy to AWS EC2
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.AWS_HOST }}
+          username: ${{ secrets.AWS_USERNAME }}
+          key: ${{ secrets.AWS_PRIVATE_KEY }}
+          script: |
+            echo "Stopping old container..."
+            docker stop webapp || true
+            docker rm webapp || true
+            
+            echo "Cleaning up old images..."
+            docker system prune -a -f
+            
+            echo "Pulling new image..."
+            docker pull ${{ secrets.DOCKER_USERNAME }}/webapp:latest
+            
+            echo "Running new container..."
+            docker run -d -p 80:80 --name webapp ${{ secrets.DOCKER_USERNAME }}/webapp:latest
+            
+            echo "Deployment complete!"
+
